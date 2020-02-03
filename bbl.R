@@ -5,6 +5,7 @@ library(forcats)
 library(hms)
 library(lubridate)
 library(janitor)
+library(magrittr)
 
 # load the excel and convert the first two rows to a single row
 # bbl_xlsx <- read_excel("<path to the file>")
@@ -41,7 +42,20 @@ bbl_csv$neutral_alternative_venue <- fct_explicit_na(bbl_csv$neutral_alternative
 bbl_csv$notes <- as.character(bbl_csv$notes)
 bbl_csv$source <- as.character(bbl_csv$source)
 
+# Creating new variables
+bbl_csv %<>% mutate(won_toss_team = ifelse(won_toss == "H",
+                                           as.character(home_team_h),
+                                           as.character(away_team_a)),
+                    batted_first_team = ifelse(batted_first == "H",
+                                               as.character(home_team_h),
+                                               as.character(away_team_a)),
+                    winner_team = ifelse(winner == "H",
+                                         as.character(home_team_h),
+                                         ifelse(winner == "A",
+                                                as.character(away_team_a),
+                                                "NR")))
+
 # Exclude betting odds values
-bbl_csv_final <- bbl_csv[, c(1:19, 30:33)]
+bbl_csv_final <- bbl_csv[, c(1:8,12:19,30:38)]
 
 
