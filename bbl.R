@@ -4,6 +4,7 @@ library(stringr)
 library(forcats)
 library(hms)
 library(lubridate)
+library(tidyverse)
 library(janitor)
 library(magrittr)
 
@@ -55,7 +56,11 @@ bbl_csv %<>% mutate(won_toss_team = ifelse(won_toss == "H",
                                                 as.character(away_team_a),
                                                 "NR")))
 
-# Exclude betting odds values
-bbl_csv_final <- bbl_csv[, c(1:8,12:19,30:38)]
+# check the data types of the newly created variables
+bbl_csv$won_toss_team <- as.factor(bbl_csv$won_toss_team)
+bbl_csv$batted_first_team <- as.factor(bbl_csv$batted_first_team)
+bbl_csv$winner_team <- as.factor(bbl_csv$winner_team)
 
-
+# different data sets
+results <- bbl_csv[, c(1:6, 38)]
+match_details <- bbl_csv[, c(1:8,12:19,30:33, 36:38)]
