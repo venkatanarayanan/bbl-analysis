@@ -20,8 +20,9 @@ library(tidyverse)
 # bbl_commentary <- as_tibble(bbl_commentary)
 # bbl_commentary$commentary[bbl_commentary$commentary == ""] <- NA
 # 
-# write.csv(bbl_commentary, "C:/Users/Hunt and Badge/Downloads/bbl_comm.csv")
-bbl_commentary <- read.csv("C:/Users/Hunt and Badge/Downloads/bbl_comm.csv", stringsAsFactors = FALSE)
+# write.csv(bbl_commentary, "<path to the file>")
+bbl_commentary <- read.csv("<path to the file>", stringsAsFactors = FALSE)
+bbl_balls <- read.csv("<path to the file>")
 bbl_commentary <- bbl_commentary %>% filter(!grepl("comes", commentary))
 bbl_commentary$commentary[bbl_commentary$X == "11432"] <- "Nathan E to Sam H, 1 run RETIRED"
 bbl_commentary <- separate(bbl_commentary, commentary, c("ball_details", "action"), sep="!")
@@ -173,3 +174,4 @@ bbl_commentary$id <- cumsum(bbl_commentary$action == "RUNS" |
                               bbl_commentary$action == "LEG BYE" |
                               bbl_commentary$action == "BYE" |
                               bbl_commentary$action == "OUT")
+bbl_commentary$ball_number <- bbl_balls$ball
