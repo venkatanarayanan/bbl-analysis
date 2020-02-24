@@ -21,8 +21,9 @@ library(tidyverse)
 # bbl_commentary$commentary[bbl_commentary$commentary == ""] <- NA
 # 
 # write.csv(bbl_commentary, "C:/Users/Hunt and Badge/Downloads/bbl_comm.csv")
-bbl_commentary <- read.csv("C:/Users/Hunt and Badge/Downloads/bbl_comm.csv")
+bbl_commentary <- read.csv("C:/Users/Hunt and Badge/Downloads/bbl_comm.csv", stringsAsFactors = FALSE)
 bbl_commentary <- bbl_commentary %>% filter(!grepl("comes", commentary))
+bbl_commentary$commentary[bbl_commentary$X == "11432"] <- "Nathan E to Sam H, 1 run RETIRED"
 bbl_commentary <- separate(bbl_commentary, commentary, c("ball_details", "action"), sep="!")
 bbl_commentary <- bbl_commentary %>% filter(!grepl("PlayersPlayer", ball_details))
 
@@ -54,6 +55,12 @@ bbl_commentary <- bbl_commentary %>% separate(ball_details, c("bowler_name", "de
 bbl_commentary$details <- str_replace(bbl_commentary$details, "OUT", "")
 bbl_commentary <- separate(bbl_commentary, details, c("batsman_name", "runs"), sep = ",")
 bbl_commentary$runs <- str_trim(bbl_commentary$runs)
+
+bbl_commentary <- bbl_commentary %>%
+  mutate(action = ifelse(grepl("RETIRED", runs) & is.na(action),
+                         "RETIRED",
+                         as.character(action)))
+bbl_commentary$runs <- str_replace(bbl_commentary$runs, "RETIRED", "")
 
 bbl_commentary <- bbl_commentary %>%
   mutate(action = ifelse(grepl("LEG BYE", runs) & is.na(action),
