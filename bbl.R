@@ -56,6 +56,14 @@ bbl_csv %<>% mutate(won_toss_team = ifelse(won_toss == "H",
                                                 as.character(away_team_a),
                                                 "NR")))
 
+bbl_csv <- bbl_csv %>% mutate(season = ifelse(date > "2019-12-01", 
+                                   2020,
+                                   ifelse(date > "2018-12-01" & date < "2019-12-01",
+                                          2019,
+                                          ifelse(date > "2017-12-01" & date < "2018-12-01",
+                                                 2018,
+                                                 NA))))
+
 # check the data types of the newly created variables
 bbl_csv$won_toss_team <- as.factor(bbl_csv$won_toss_team)
 bbl_csv$batted_first_team <- as.factor(bbl_csv$batted_first_team)
@@ -137,3 +145,25 @@ ggplot(toss_data,
        x = "Team",
        y = "Percentage",
        fill = "First Batting Team")
+
+results <- bbl_csv[, c(1:6,8,38:39)]
+match_details <- bbl_csv[, c(1:8,12:19,30:33, 36:39)]
+
+# Which venue has hosted the most games
+venue_matches <- results %>% group_by(venue) %>% dplyr::summarise(no_of_matches = n())
+
+ggplot(venue_matches,
+       aes(x = reorder(venue, no_of_matches),
+           y = no_of_matches)) +
+  geom_bar(stat = "identity",
+           fill = "#148F77") +
+  geom_text(aes(label = no_of_matches),
+            hjust = -0.5) +
+  labs(title = "Number of BBL matches in different venues",
+       subtitle = "(BBL01 - BBL09)",
+       x = "Venue",
+       y = "No. of matches",
+       caption = "source: http://www.aussportsbetting.com/") +
+  coord_flip() +
+  theme_classic()
+
