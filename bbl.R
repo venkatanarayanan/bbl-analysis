@@ -7,6 +7,8 @@ library(lubridate)
 library(tidyverse)
 library(janitor)
 library(magrittr)
+library(ggbeeswarm)
+library(scales)
 
 # load the excel and convert the first two rows to a single row
 # bbl_xlsx <- read_excel("<path to the file>")
@@ -56,7 +58,7 @@ bbl_csv %<>% mutate(won_toss_team = ifelse(won_toss == "H",
                                                 as.character(away_team_a),
                                                 "NR")))
 
-bbl_csv <- bbl_csv %>% mutate(season = ifelse(date > "2019-12-01", 
+bbl_csv <- bbl_csv %>% mutate(season = ifelse(date > "2019-12-01",
                                    2020,
                                    ifelse(date > "2018-12-01" & date < "2019-12-01",
                                           2019,
@@ -167,3 +169,38 @@ ggplot(venue_matches,
   coord_flip() +
   theme_classic()
 
+ggplot(match_details,
+       aes(x = home_team_h,
+           y = home_score,
+           color = home_team_h)) +
+  geom_point(size = 1.5) +
+  labs(title = "Big Bash Home Team Scores (BBL01 - BBL09) - Overlapping points",
+       subtitle = "geom_point()",
+       caption = "Data: http://www.aussportsbetting.com/data/historical-twenty20-big-bash-results-and-odds-data/",
+       x = "Team",
+       y = "Score") +
+theme(legend.position = "none")
+
+ggplot(match_details,
+       aes(x = home_team_h,
+           y = home_score,
+           color = home_team_h)) +
+  geom_quasirandom(size = 1.5) +
+  labs(title = "Big Bash Home Team Scores (BBL01 - BBL09)",
+       subtitle = "geom_quasirandom()",
+       caption = "Data: http://www.aussportsbetting.com/data/historical-twenty20-big-bash-results-and-odds-data/",
+       x = "Team",
+       y = "Score") +
+theme(legend.position = "none")
+
+ggplot(match_details,
+       aes(x = home_team_h,
+           y = home_score,
+           color = home_team_h)) +
+  geom_beeswarm(priority = 'ascending') +
+  labs(title = "Big Bash Home Team Scores (BBL01 - BBL09)",
+       subtitle = "geom_beeswarm()",
+       caption = "Data: http://www.aussportsbetting.com/data/historical-twenty20-big-bash-results-and-odds-data/",
+       x = "Team",
+       y = "Score") +
+  theme(legend.position = "none")
