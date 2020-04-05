@@ -9,6 +9,8 @@ library(janitor)
 library(magrittr)
 library(ggbeeswarm)
 library(scales)
+library(CGPfunctions)
+library(ggalt)
 
 # load the excel and convert the first two rows to a single row
 # bbl_xlsx <- read_excel("<path to the file>")
@@ -20,7 +22,7 @@ library(scales)
 # write.csv(bbl_xlsx, "<path to the file>")
 
 # read the csv file
-bbl_csv <- read.csv("<path to the file>")
+bbl_csv <- read.csv("./data/bbl.csv")
 
 # rename the variable names
 bbl_csv <- clean_names(bbl_csv)
@@ -66,23 +68,48 @@ bbl_csv <- bbl_csv %>% mutate(season = ifelse(date > "2019-12-01",
                                                  2018,
                                                  NA))))
 
+bbl_csv$venue <- fct_recode(bbl_csv$venue,
+                            "WACA" = "WACA Ground",
+                            "Manuka Oval" = "UNSW Canberra Oval",
+                            "UoT Stadium" = "University Of Tasmania Stadium",
+                            "Coffs Harbour" = "C.ex Coffs International Stadium",
+                            "Ted Reserve" = "Ted Summerton Reserve",
+                            "Sydney Showground" = "Sydney Showground Stadium")
+
 # check the data types of the newly created variables
 bbl_csv$won_toss_team <- as.factor(bbl_csv$won_toss_team)
 bbl_csv$batted_first_team <- as.factor(bbl_csv$batted_first_team)
 bbl_csv$winner_team <- as.factor(bbl_csv$winner_team)
 
 # different data sets
-results <- bbl_csv[, c(1:6, 38)]
-match_details <- bbl_csv[, c(1:8,12:19,30:33, 36:38)]
+results <- bbl_csv[, c(1:6, 8, 38:39)]
+match_details <- bbl_csv[, c(1:8,12:19,30:33, 36:39)]
 
-# create toss dataset
+# Which venue has hosted the most games
+venue_matches <- results %>% group_by(venue) %>% dplyr::summarise(no_of_matches = n())
+ggplot(venue_matches,
+       aes(x = reorder(venue, no_of_matches),
+           y = no_of_matches)) +
+  geom_bar(stat = "identity",
+           fill = "#148F77") +
+  geom_text(aes(label = no_of_matches),
+            hjust = -0.5) +
+  labs(title = "Number of BBL matches in different venues",
+       subtitle = "(BBL01 - BBL09)",
+       x = "Venue",
+       y = "No. of matches",
+       caption = "source: http://www.aussportsbetting.com/") +
+  coord_flip() +
+  theme_classic()
+
+# create toss dataframe
 toss_data <- match_details %>%
   group_by(won_toss_team, batted_first_team) %>%
   summarise(n = n()) %>%
   mutate(percent_value = n / sum(n),
          percentage = scales::percent(percent_value))
 names <- paste0(c("", "\n"),
-                 levels(match_details$won_toss_team))
+                levels(match_details$won_toss_team))
 
 # Staggered Labels
 ggplot(toss_data,
@@ -148,27 +175,6 @@ ggplot(toss_data,
        y = "Percentage",
        fill = "First Batting Team")
 
-results <- bbl_csv[, c(1:6,8,38:39)]
-match_details <- bbl_csv[, c(1:8,12:19,30:33, 36:39)]
-
-# Which venue has hosted the most games
-venue_matches <- results %>% group_by(venue) %>% dplyr::summarise(no_of_matches = n())
-
-ggplot(venue_matches,
-       aes(x = reorder(venue, no_of_matches),
-           y = no_of_matches)) +
-  geom_bar(stat = "identity",
-           fill = "#148F77") +
-  geom_text(aes(label = no_of_matches),
-            hjust = -0.5) +
-  labs(title = "Number of BBL matches in different venues",
-       subtitle = "(BBL01 - BBL09)",
-       x = "Venue",
-       y = "No. of matches",
-       caption = "source: http://www.aussportsbetting.com/") +
-  coord_flip() +
-  theme_classic()
-
 ggplot(match_details,
        aes(x = home_team_h,
            y = home_score,
@@ -193,14 +199,57 @@ ggplot(match_details,
        y = "Score") +
 theme(legend.position = "none")
 
+# Create beeswarm plot to visualize the total scores of home teams
 ggplot(match_details,
        aes(x = home_team_h,
            y = home_score,
            color = home_team_h)) +
   geom_beeswarm(priority = 'ascending') +
-  labs(title = "Big Bash Home Team Scores (BBL01 - BBL09)",
-       subtitle = "geom_beeswarm()",
+  labs(title = "Big Bash Analysis(BBL01 - BBL09)",
+       subtitle = "geom_beeswarm() - analysing the total scores of home teams",
        caption = "Data: http://www.aussportsbetting.com/data/historical-twenty20-big-bash-results-and-odds-data/",
        x = "Team",
        y = "Score") +
   theme(legend.position = "none")
+
+# Create 'winner_data' that shows the number of games won by the teams in 17/18, 18/19, 19/20
+winner_data <- match_details %>%
+  filter(!is.na(winner_team)) %>%
+  group_by(winner_team, season) %>%
+  count(winner_team) %>%
+  filter(!is.na(season), winner_team != "NR")
+
+# To create a slope graph the time variable must be a factor
+winner_data$season <- factor(winner_data$season)
+winner_data <- winner_data %>% arrange(n)
+
+# Create a slope graph to show the number of wins
+newggslopegraph(winner_data, season, n, winner_team) +
+  labs(title = "Big Bash Analysis (BBL 01 - BBL 09)",
+       subtitle = "Number of wins in 17/18, 18/19, 19/20",
+       caption = "Data: https://www.kaggle.com/thekinginthenorth/bbl-historical-data")
+
+# Create a wide format data of the winner_data to demonstrate dumbbell plot
+winner_data_wide <- spread(winner_data, season, n)
+names(winner_data_wide) <- c("winner_team", "y2018", "y2019", "y2020")
+
+# Create a dumbbell plot to see the change in number of wins comparing 17/18 & 19/20
+ggplot(winner_data_wide,
+       aes(y = winner_team,
+           x = y2018,
+           xend = y2020)) +
+  geom_dumbbell(colour_x = "red",
+                colour_xend = "blue",
+                size_x = 3,
+                size_xend = 3) +
+  labs(title = "Big Bash Analysis",
+       subtitle = "Number of wins in 17/18 & 19/20",
+       caption = "Data: https://www.kaggle.com/thekinginthenorth/bbl-historical-data",
+       x = 'Number of wins',
+       Y = "Team") +
+  theme_minimal()
+
+# Create 'loser' variable
+bbl_csv <- bbl_csv %>%
+  mutate(loser = ifelse(winner == "H", "A",
+                        ifelse(winner == "A", "H", "NR")))
